@@ -11,7 +11,6 @@
 # - Following Agarwal et al.'s approach, a random walk Metropolis-Hastings
 #   algorithm is built. Acknowledgements to Rossi et al. 2005.
 # - priors, likelihood and the steps are listed in the author's appendix.
-# - It is possible to source this script.
 
 # Lisa Gotzian, August 2018
 
