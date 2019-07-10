@@ -1,0 +1,37 @@
+\begin{figure}
+\begin{tikzpicture}
+  \tikzstyle{entity}=[rounded rectangle, minimum height = 10mm, minimum width=30mm, thick, draw =black!80, node distance = 20mm, text centered, font = \footnotesize]
+  \tikzstyle{factor}=[rounded rectangle, draw =black!80, node distance = 40mm, font = \footnotesize]
+  \tikzstyle{add}=[font = \footnotesize, gray]
+    \node[entity, text width=2cm] (u) {Latent utility of clicking $U^{CTR}_{kt}$};
+    \node[entity, right of =u, xshift=15mm, text width=2cm] (c) {\textbf{CTR:} $\Lambda^{CTR}_{kt}$};
+    \node[factor, left of = u, yshift = 28mm] (0) {$\theta^{k}_{0}$};
+    \node[factor, left of = u, yshift = 21mm, draw = MidnightBlue] (AdPos) {$\theta^{k}_{1} Adpos_{kt}$};
+    \node[factor, left of = u, yshift = 14mm, draw = MidnightBlue] (OrgComp) {$\theta^{k}_{2} OrganicComp_{kt}$};
+    \node[factor, left of = u, yshift = 7mm] (SponsComp) {$\theta^{k}_{3} SponsoredComp_{kt}$};
+    \node[factor, left of = u, yshift = 0mm] (Org) {$\theta_{4} Organic_{kt}$};
+    \node[factor, left of = u, yshift = -7mm] (LQ) {$\theta_{5} LQScore_{kt}$};
+    \node[factor, left of = u, yshift = -14mm] (Time) {$\theta_{Time} Time_{kt}$};
+    \node[factor, left of = u, yshift = -21mm] (e) {\textcolor{PineGreen}{$\epsilon^{\theta}_{kt}$}};
+    
+    \node[add, below of = c] (deltaf) {
+    $\Lambda^{CTR}_{kt}
+    = \frac{exp(U^{CTR}_{kt})}
+    {1 + exp(U^{CTR}_{kt})}$
+    };
+    
+    \node[add, below of = e, text width = 2.5cm] (thetaf) {
+    $\theta^{k} = \Delta^{\theta} z_{k} + u^{\theta}_{k}$ $u^{\theta}_{k} \sim N (0,V^{\theta})$
+    $\beta, \gamma, \alpha$ resp.
+    };
+    
+    \node[entity, below of = deltaf] (conv) {\textbf{Conversion rate:} $\Lambda^{CONV}_{kt}$};
+    \draw[->, dashed] (0,-3) -- (conv);
+    \node[factor, above of = c, draw = MidnightBlue, yshift=-10mm] (legend){endogenous variables};
+
+    \path (u) edge[-latex] (c)
+    \foreach \p in {0, AdPos, OrgComp, SponsComp, Org, LQ, Time, e} {(\p) edge[latex] (u)};
+\end{tikzpicture}
+    \caption{The full model, shown for CTR. Conversion rate and the two endogenous variables have a similar setup and are therefore only hinted at in this graph.}
+    \label{fig:FullModel}
+\end{figure}

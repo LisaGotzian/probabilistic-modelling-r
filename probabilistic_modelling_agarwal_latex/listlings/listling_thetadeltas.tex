@@ -1,0 +1,30 @@
+\begin{lstlisting}[caption={Code for simulating $\Delta^{\theta}$ and $V^{\theta}$.}]
+# The theta_delta matrix is given incompletely, all missing values are treated as 0. It is all parameters depending on k in interaction with a keyword's brand and specificity, giving a 4x2 (or 2x2) matrix.
+theta_delta <- matrix(c(c(0.25, -0.51), # const x brand and spec
+                        c(0,0), # adpos x brand and spec
+                        c(-0.09, 0.64), # organic_comp x brand and spec
+                        c(-0.01,0.55)), # sponsored_comp x brand and spec
+                      nrow=4, ncol=2, byrow=TRUE)
+                      
+# The covariance matrices: basically the error "within" a set of parameters 4 thetas depend on k, so VTheta is 4x4. All in all, there are 4 V matrices, one for each parameter set, two of size 4x4, two of size 2x2.
+VTheta <- riwish(4, diag(1,nrow=4))
+
+# Define the function to draw the parameters dependent on k
+# It first simulates the u_error and then takes the delta_matrix times the z vector.
+calc_coeff_matr <- function(keywords, delta_matr, z, v_matr) {
+  l = matrix(nrow= 4, ncol=keywords)
+  for (k in 1:keywords){
+    u <- matrix(rmvnorm(n=1, mean=rep(0,nrow(delta_matr)), v_matr),
+                nrow=nrow(delta_matr))
+    d <- delta_matr %*% z[[k]] + u
+    l[,k] <-  d
+  }
+  return(l)
+}
+
+# The thetas dependent on k for CTR
+random_thetas <- calc_coeff_matr(num_keywords, theta_delta, z, VTheta)
+
+# Took the mean values for the thetas that do not depend on k.
+theta4 <- -0.2; theta5 <- 0.3; theta6 <- -0.01
+\end{lstlisting}

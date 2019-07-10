@@ -1,0 +1,18 @@
+\begin{lstlisting}[caption={Code for simulating the parameters, shown for $\theta$.}]
+# The final linear model
+u_ctr <- matrix(nrow=num_keywords, ncol=num_days)
+CTR_estimate <- matrix(nrow=num_keywords, ncol=num_days)
+for (t in 1:num_days) {
+  for (k in 1:num_keywords){
+    u_ctr[k,t] <- random_thetas[[k]][1] + random_thetas[[k]][2]*adpos_eq[k,t] +
+      random_thetas[[k]][3]*orgcomp_eq[k,t] + random_thetas[[k]][4]*sponsored_comp[k,t] +
+      theta4*organic[k,t] + theta5*lqscore[k,t] +
+      theta6*t + theta_error[k,t]
+      
+    CTR_estimate[k,t] <- exp(u_ctr[k,t]) / (1 + exp(u_ctr[k,t]))
+    # the logit part
+    }
+}
+# [same for betas, gammas and alphas]
+
+\end{lstlisting}

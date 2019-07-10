@@ -1,0 +1,19 @@
+\begin{lstlisting}[caption={Code for generating the error terms.}]
+#------------calculate the error terms-------------------#
+r1 <- c(0.370,	-0.036,	0.000,	-0.005)
+r2 <- c(-0.036,	0.232,	0.007,	0.02)
+r3 <- c(0,	0.007,	0.064,	-0.005)
+r4 <- c(-0.005,	0.02,	-0.005,	0.087)
+
+o_mat_cols <- c('CONV','CTR','Pos','Organic_comp')
+omega_matrix <- matrix(c(r1, r2, r3, r4), nrow=4, ncol=4, byrow=TRUE, dimnames = list(o_mat_cols))
+colnames(omega_matrix) <- o_mat_cols
+
+error_terms <- rmvnorm(n = num_observations, sigma=omega_matrix)
+errors <- vector(mode="list", length=4)
+names(errors) <- c('theta_error','beta_error','gamma_error','alpha_error')
+errors[[1]] <- matrix(error_terms[,1], nrow=num_keywords, ncol=num_days)
+# [errors[[2]] till 4 in the same manner]
+
+theta_error <- errors$theta_error
+\end{lstlisting}

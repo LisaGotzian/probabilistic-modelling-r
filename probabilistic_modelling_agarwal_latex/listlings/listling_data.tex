@@ -1,0 +1,28 @@
+\begin{lstlisting}[caption={Simulating the data}]
+library(rtruncnorm)
+## instantiate the values to estimate
+num_keywords <- 36
+num_days <- 40
+num_observations <- 1440
+
+# Poisson impressions
+impressions <- matrix(round(rpois(n=num_observations, lambda = rep(72.8, num_observations)), 0), nrow=num_keywords, ncol=num_days)
+impressions[impressions > 1666] <- 1666
+impressions[impressions < 1] <- 1
+
+# [removed clicks and orders for this example as they were poisson-distributed as well]
+
+# Normally distributed data with organic being binomial distributed
+organic <- matrix(rbinom(n=num_observations, size = 1, p=0.15),
+                  nrow=num_keywords, ncol=num_days)
+iv_organic <- matrix(round(rtruncnorm(n=num_observations, a=0.1, b=2.34, mean=0.42, sd=0.23),2), nrow=num_keywords, ncol=num_days)
+# [removed sponsored_comp, iv_sponsored and lq_score and bid as they are normally distributed and constructed the same way]
+
+# Binomial distributions of brand and specificity
+brand <- matrix(rbinom(n=num_keywords, size = 1, p=0.6),
+                nrow=num_keywords, ncol=1)
+
+specificity <- matrix(rbinom(n=num_keywords, size=1, p=0.4),
+                      nrow=num_keywords, ncol=1)
+
+\end{lstlisting}

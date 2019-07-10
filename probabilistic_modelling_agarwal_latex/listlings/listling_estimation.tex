@@ -1,0 +1,72 @@
+\begin{lstlisting}[caption={Estimating the model with a very basic JAGS version}]
+modelString = "
+model {
+for (j in 1:N){
+for (i in 1:M){
+
+ctr[i, j] ~ dnorm(p[i,j], 1)
+p[i, j] <- exp( z[i, j] ) / ( 1 + exp( z[i, j] ) )
+z[i, j] <- (-4.22 + theta0) + (-1.42 + theta1) * adpos_eq[i, j] + random_thetas[3, i] * orgcomp_eq[i, j] 
++ random_thetas[4, i] * sponsored_comp[i, j] + theta4 * organic[i, j]
++ theta5 * lqscore[i, j] + theta6 * i + theta_error[i, j] 
+
+conv[i, j] ~ dnorm(r[i, j], 1)
+r[i, j] <- exp(q[i, j]) / (1 + exp(q[i, j]))
+q[i,j] <- (-2.75 + beta0) + (0.81 + beta1) * adpos_eq[i, j] + random_betas[3, i] * orgcomp_eq[i, j] + 
+random_betas[4, i] * sponsored_comp[i, j] + beta4 * organic[i, j] + 
+beta5 * lqscore[i, j] + beta6 * i + beta_error[i, j]
+
+adpos_eq[i, j] <- exp(random_gammas[1, i] + random_gammas[2, i] * log(bid[i, j]) + gamma2 * lqscore[i, j] +
+                   gamma3 * i + gamma_error[i, j])
+
+orgcomp_eq[i, j] <- random_alphas[1, i] + random_alphas[2, i] * iv_organic[i, j] +
+                     alpha2 * i + alpha_error[i, j]
+
+}
+}
+gamma2 <- -0.049
+gamma3 <- -0.002
+
+alpha2 <- -0.004
+
+theta0 ~ dnorm(0, 0.55)
+theta1 ~ dnorm(0, 0.18)
+theta4 <- -0.2
+theta5 <- 0.3 
+theta6 <- -0.01
+
+beta0 ~ dnorm(0, 0.68)
+beta1 ~ dnorm(0, 0.28)
+beta4 <- 0.17
+beta5 <- -0.01
+beta6 <- -0.01
+}
+"
+writeLines( modelString, con="TEMPmodel.txt")
+
+jags <- jags.model('TEMPmodel.txt',
+                   data = list('N' = num_days,
+                               'M' = num_keywords,
+                               'adpos' = adpos,
+                               'ctr' = CTR_estimate,
+                               'conv' = CONV_estimate,
+                               'bid' = bid,
+                               'iv_organic' = iv_organic,
+                               'orgcomp' = organic_comp,
+                               'organic' = organic,
+                               'sponsored_comp' = sponsored_comp,
+                               'lqscore' = lqscore,
+                               'theta_error' = theta_error,
+                               'beta_error' = beta_error,
+                               'random_betas' = random_betas,
+                               'random_thetas' = random_thetas,
+                               'random_gammas' = random_gammas,
+                               'random_alphas' = random_alphas,
+                               'gamma_error' = gamma_error,
+                               'alpha_error' = alpha_error),
+                   n.chains = 4,
+                   n.adapt = 1000)
+
+update(jags, 1000)
+
+\end{lstlisting}

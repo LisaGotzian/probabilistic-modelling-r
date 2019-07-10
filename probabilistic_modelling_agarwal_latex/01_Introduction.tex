@@ -1,0 +1,154 @@
+\section{Introduction} \label{sec:intro}
+Bayesian hierarchical models have gained quite some importance in the marketing segment during the last 15 years \citep{rossibook, ghose, agarwal_organic_2015}. They are now being employed to analyze click-behavior and orders to evaluate the effectiveness of advertisements in search engines. Eventually, the factors that lead to this behavior are modeled and given a certain importance.\\
+Among factors such as sponsored competition, an ad's position relative to other ads, or the quality score of a given keyword, organic search results have not extensively been taken into account. Following the approach of Agarwal et al. 2015., this paper rebuilds and comments on a bayesian hierarchical model that assesses the role of organic search results in particular.\\
+The paper is broken up into the following sections: first, a brief overview of the research performed by Agarwal et al in their paper "Do organic search results help or hurt sponsored search performance?" \citep{agarwal_organic_2015}, as well as an explanation of their development, and our interpretation of their model; then, a discussion on the data used for the model, our attempts to simulate the data based on the provided (and some noticeably absent) summary statistics; further, there is an outline of the model estimation made using MCMC sampling and related packages in R; finally, an evaluation of the model describing challenges faced in extrapolating Agarwal et al's model from the paper into a workable format.
+
+\subsection{The findings by Agarwal et al.}
+The authors explored how organic competition from organic listings of direct competitors impacts click and conversion performance in sponsored search, using the data collected during an advertisement campaign of a pet food online retailer. The paper's findings link an increase in organic competition with a decrease in the click performance of sponsored advertisements; nevertheless, organic competition positively impacts the conversion performance of sponsored ads, which, in turn, increases revenue. Their results state that the negative impact of organic competition on click performance appeared to be higher than that of sponsored competition.
+
+\subsection{The framework}
+The model targets both click-through rate (CTR) and conversion rate (CONV) as dependent variables and assumes the data to be explained by a logit function of the latent utility of clicking or conversion, respectively. All parameters denoted with $kt$ have a value for each of 36 keywords (k) and 40 days (t), while those with $k$ are influenced by keywords only, not time. This section explores the model in more depth to clarify details that have not explicitly been defined by the authors.
+
+\begin{equation} \label{eq:lambda}
+    \begin{array}{lll}
+     \Lambda^{CTR}_{kt} &= \tfrac{exp(U^{CTR}_{kt})}{1+ exp(U^{CTR}_{kt})}   &\text{or } \tfrac{Clicks_{kt}}{Impressions_{kt}}\\[10pt]
+     \Lambda^{CONV}_{kt} &= \tfrac{exp(U^{CONV}_{kt})}{1+ exp(U^{CONV}_{kt})}   &\text{or } \tfrac{Orders_{kt}}{Impressions_{kt}}
+    \end{array}
+\end{equation}
+
+The latent utilities of clicking and buying are based on ad position, organic search results and the quality score by Google (LQscore) multiplied by their importance, denoted by $\beta$ and $\theta$.
+
+\begin{equation} \label{eq:mainlinear}
+    \begin{array}{ll}
+     U^{CTR}_{kt} =& \theta^{k}_{0} +  \theta^{k}_{1} AdPos_{kt} + \theta^{k}_{2} OrganicComp_{kt} + \theta^{k}_{3} SponsoredComp_{kt}\\
+     &+ \theta_{4} Organic_{kt} + \theta_{5} LQScore_{kt} + \theta_{Time} Time_{kt} + \epsilon^{\theta}_{kt}\\[10pt]
+     U^{CONV}_{kt} =& \beta^{k}_{0} +  \beta^{k}_{1} AdPos_{kt} + \beta^{k}_{2} OrganicComp_{kt} + \beta^{k}_{3} SponsoredComp_{kt}\\
+     &+ \beta_{4} Organic_{kt} + \beta_{5} LQScore_{kt} + \beta_{Time} Time_{kt} + \epsilon^{\beta}_{kt}
+    \end{array}
+\end{equation}
+
+The model furthermore handles $AdPos_{kt}$ as well as $OrganicComp_{kt}$ as endogenous variables. They depend on another set of biases $\gamma$ and $\alpha$ with only selected parts of the data.\footnote{It should be noted that the appendix consequently uses the natural log of Organic Competition instead of the value itself. Thus, it is likely that this formulation misses ln() given it has been used for $AdPosition$.}
+
+\begin{equation} \label{eq:endogeneous}
+    \begin{array}{ll}
+     ln(AdPos_{kt})&= \gamma^{k}_{0} + \gamma^{k}_{1}ln(bid)_{kt} + \gamma_{2}LQScore_{kt} + \gamma_{Time}Time_{kt} + \epsilon^{\gamma}_{kt}\\[10pt]
+     OrganicComp_{kt}&= \alpha^{k}_{0} + \alpha^{k}_{1}IVOrganic_{kt} + \alpha_{Time}Time_{kt} + \epsilon^{\alpha}_{kt}
+    \end{array}
+\end{equation}
+
+All parameters $\theta^k$, $\beta^k$, $\gamma^k$ and $\alpha^k$ are drawn from a multivariate normal distribution with a mean of $\Delta^{\theta} z_{k}$ and a sigma matrix $V^{\theta}$ for $\theta$. The same applies to the other variables like $\beta$.\footnote{\textit{N} has been adjusted to the multivariate distribution (\textit{MVN}).}
+
+\begin{equation}\label{eq:distributions}
+    \begin{array}{rlrl}
+    \theta^{k} &= \Delta^{\theta} z_{k} + u^{\theta}_{k} \quad\quad
+    &\beta^{k} &= \Delta^{\beta} z_{k} + u^{\beta}_{k}\\
+    u^{\theta}_{k} &\sim \text{\textit{MVN}} (0,V^{\theta}) \quad\quad
+    &u^{\beta}_{k} &\sim \text{\textit{MVN}} (0,V^{\beta})\\[10pt]
+    \gamma^{k} &= \Delta^{\gamma} z_{k} + u^{\gamma}_{k} \quad\quad
+    &\alpha^{k} &= \Delta^{\alpha} z_{k} + u^{\alpha}_{k}\\
+    u^{\gamma}_{k} &\sim \text{\textit{MVN}} (0,V^{\gamma}) \quad\quad
+    &u^{\alpha}_{k} &\sim \text{\textit{MVN}} (0,V^{\alpha})
+    \end{array}
+\end{equation}
+
+Four $\theta^k$s depend on the keyword, three $\theta$s are given as one value. For $\beta$, the 4/3 ratio remains, for $\gamma$, this becomes 2/2 and alpha's ratio is 2/1.\footnote{While the formulation in equation \ref{eq:distributions} seems to only cover the parameters denoted with k, the appendix suggests a normal distribution for those without k as well, with a mean of 0 instead of $\Delta^{\theta} z_{k}$ and a standard deviation of 100.}\\
+In the following, the model is described for the click-through rate and its parameters $\theta_k$ and $\theta$ which can be mirrored for $\beta$, $\gamma$ and $\alpha$ respectively.\\
+First, $z_k$ is a 2xk matrix from the data, denoting brand and specificity of the given keyword. Consequently, $\Delta^{\theta}$ is a 4x2 matrix and represents the relationship of the four $\theta^k$s with a keyword's brand and specificity. $\Delta^{\theta} z_k$ multiplied then is the mean of the parameters' multivariate normal distribution.
+
+\begin{equation}
+    \theta^k =
+        \begin{blockarray}{ccc l}
+        k=1 & & k=36 &\\
+        \begin{block}{[c][c][c]l}
+         \theta^{(1)}_{0} & ... & \theta^{(K)}_{0} & \theta_0 \text{ for const}\\
+        ... && ... & \theta_1 \text{ for AdPos}\\
+        ... && ... & \theta_2 \text{ for OrganicComp}\\
+        \theta^{(1)}_{3} & ... & \theta^{(K)}_{3} & \theta_3 \text{ for SponsoredComp}\\
+        \end{block}
+        \end{blockarray}
+\end{equation}
+
+\begin{center}
+    e.g. for $k=5$:\footnote{Table 4 on p. 41 either missed the top two rows of $\Delta^{\theta}$ or doesn't mention that these correspond to 0. They have been interpreted as 0 for the simulation. The problem arouse in a similar manner for the other parameters as well.}
+\end{center}
+\begin{equation}
+    \begin{array}{cccc}
+        \theta^{(5)} = 
+        &\begin{bmatrix}
+        \theta_0 x Brand & \theta_0 x Spec\\
+        \theta_1 x Brand & \theta_1 x Spec\\
+        \theta_2 x Brand & \theta_2 x Spec\\
+        \theta_3 x Brand & \theta_3 x Spec
+        \end{bmatrix} 
+        \quad \cdot
+        &\begin{bmatrix}
+        Brand_{5}\\
+        Specificity_{5}
+        \end{bmatrix}
+        \quad + &\begin{bmatrix}
+        u^{(0)}_{5}\\
+        u^{(1)}_{5}\\
+        u^{(2)}_{5}\\
+        u^{(3)}_{5}
+        \end{bmatrix}\\[30pt]
+        &\Delta^{\theta} & z_{5} & u^{\theta}_{5}
+    \end{array}
+\end{equation}
+
+To estimate the sigma matrix for the multivariate distribution of each parameter $\theta^k$, the model proposes an intermediate step via a $u$ vector.
+The $u$ vector can be seen as the unobserved heterogeneity of each keyword. It is drawn from a multivariate normal distribution with a mean of 0 and the covariance matrix $V^\theta$. $V^{\theta}$ in return is Inverse-Wishart distributed. The IW distribution is associated as a conjugate prior for covariance matrices of multivariate normal distributions \citep[p. 28ff.]{rossibook}. S = 10I is the identity matrix, scaled with 10.
+
+\begin{equation}
+    \begin{array}{rl} \label{eq:vmatrix}
+         u^{\theta}_k &\sim \text{\textit{MVN}}(0, V^{\theta}) \\
+         V^{\theta} &\sim IW(\nu + N, \quad \sum\nolimits^K_{k=1} (\theta^k - \Delta^{\theta} z_k)^T(\theta^k - \Delta^{\theta} z_k) + S)\\[5pt]
+         &\text{where N = No of keywords, $\nu$ = 10, S = 10I}\\[10pt]
+         V^{\theta-1} &= \begin{bmatrix}
+         var[\theta_0] & cov[\theta_0, \theta_1]& cov[\theta_0, \theta_2]& cov[\theta_0, \theta_3]\\
+         cov[\theta_1, \theta_0] & var[\theta_1]& cov[\theta_1, \theta_2]& cov[\theta_1, \theta_3]\\
+         cov[\theta_2, \theta_0] & cov[\theta_2, \theta_1]& var[\theta_2]& cov[\theta_2, \theta_3]\\
+         cov[\theta_3, \theta_0] & cov[\theta_3, \theta_1]& cov[\theta_3, \theta_2] & var[\theta_3]
+         \end{bmatrix}
+    \end{array}
+\end{equation}
+
+The model is endogeneous, meaning that the errors $\epsilon_{kt}$ for $U^{CTR}_{kt}$, $U^{CONV}_{kt}$, $AdPos_{kt}$ and $OrganicComp_{kt}$ from equations \ref{eq:mainlinear} and \ref{eq:endogeneous} are correlated and have thus been drawn from a multivariate normal distribution as well. Like the other covariance matrices $V$, the covariance matrix $\Omega$ is estimated by the Inverse Wishart distribution. All errors then form a vector of four kxt matrices, hence in the example, $\epsilon^{\theta}$ is a kxt matrix. "As the position of the advertisement as well as organic competition are endogenous, the
+unobservable time varying keyword attributes for the equations representing consumer decisions will be correlated with error terms for the equations representing position and organic competition."\citep[p. 26]{agarwal_organic_2015}
+
+\begin{equation}
+    \begin{array}{rl}
+         \begin{bmatrix}
+         \epsilon^{\beta}_{kt}\\
+         \epsilon^{\theta}_{kt}\\
+         \epsilon^{\gamma}_{kt}\\
+         \epsilon^{\alpha}_{kt}
+         \end{bmatrix}
+         & \sim \text{\textit{MVN}}(0, \Omega)
+    \end{array}
+\end{equation}
+
+\begin{equation}
+    \begin{array}{rl} \label{eq:omega}
+         \Omega \sim& IW(\nu_\Omega + N, \quad \sum\nolimits^K_{k=1} \sum\nolimits^T_{t=1} Y_{kt}^T Y_{kt} + S_\Omega)\\[5pt]
+         &\text{where N = No of keywords, $\nu_\Omega$ = 10, $S_\Omega$ = 10I}\\[10pt]
+         \Omega^{-1} =& \begin{bmatrix}
+         var[\epsilon^{\beta}] & cov[\epsilon^{\beta}, \epsilon^{\theta}]& cov[\epsilon^{\beta}, \epsilon^{\gamma}]& cov[\epsilon^{\beta}, \epsilon^{\alpha}]\\
+         cov[\epsilon^{\theta}, \epsilon^{\beta}] & var[\epsilon^{\theta}]& cov[\epsilon^{\theta}, \epsilon^{\gamma}]& cov[\epsilon^{\theta}, \epsilon^{\alpha}]\\
+         cov[\epsilon^{\gamma}, \epsilon^{\beta}] & cov[\epsilon^{\gamma}, \epsilon^{\theta}]& var[\epsilon^{\gamma}]& cov[\epsilon^{\gamma}, \epsilon^{\alpha}]\\
+         cov[\epsilon^{\alpha}, \epsilon^{\beta}] & cov[\epsilon^{\alpha}, \epsilon^{\theta}]& cov[\epsilon^{\alpha}, \epsilon^{\gamma}] & var[\epsilon^{\alpha}]
+         \end{bmatrix}
+    \end{array}
+\end{equation}
+
+In equation \ref{eq:omega}, $Y_{kt}$ refers to 4 kxt matrices. It is calculated by subtracting all parameters times the data (essentially all terms of each linear model except for the error) from the current estimate \citep[appendix p. 3]{agarwal_organic_2015}.\\
+To summarize the idea, the parameter $\theta$ from the CTR example, as well as $\beta$, $\alpha$ and $\gamma$ act as 'weights', defining the role each factor plays for CTR, for example. These are precisely the unknown parameters the model has to define, see figure \ref{fig:FullModel}. Taking the errors and covariances into account, the overall triangular system then has the following dependencies:
+\begin{equation}
+    \begin{array}{ll} \label{eq:dependencies}
+        U^{CTR}_{kt} &= f(AdPos_{kt}, OrganicComp_{kt}, X1, \epsilon^{\theta}_{kt})\\
+        U^{CONV}_{kt} &= f(AdPos_{kt}, OrganicComp_{kt}, X2, \epsilon^{\beta}_{kt})\\
+        AdPos_{kt} &= f(X3, \epsilon^{\gamma}_{kt})\\
+        OrgComp_{kt} &= f(X4, \epsilon^{\alpha}_{kt})
+    \end{array}
+\end{equation}
+
+\input{fullmodel.tex}
