@@ -1,5 +1,5 @@
 # Probabilistic modelling using JAGS, BUGS and the Metropolis algorithm in R
-This project is follows the bayesian hierarchical model by [Agarwal et al., 2015: Do organic results help or hurt sponsored search performance?](http://dx.doi.org/10.1287/isre.2015.0593), including its supplementary material, in R using JAGS, BUGS and a bottom-up approach.
+This project follows the bayesian hierarchical model by [Agarwal et al., 2015: Do organic results help or hurt sponsored search performance?](http://dx.doi.org/10.1287/isre.2015.0593), including its supplementary material, in R using JAGS, BUGS and a bottom-up approach.
 `probabilistic_modelling_agarwal.pdf` is a complete documentation and description of the project including inline code. (I urge you, read it. It'll be worth the read!)
 
 ## Data simulation
